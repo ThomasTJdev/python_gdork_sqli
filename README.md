@@ -15,7 +15,7 @@
  The script is divided into 3 main sections.
  
 ### Section 1
-   In this section you have to provide a search string, which 'connects' to
+   In this section you'll have to provide a search string, which 'connects' to
    the websites database, e.g. 'php?id='. The script then crawls
    Bing or Google for urls containing it. All of the urls can then be saved
    into a file. (Please be aware that you might get banned for crawling to
@@ -33,7 +33,5 @@
    This is just an activation of sqlmap with the bulk argument and no
    user interaction for validation of SQL injection.
 
- If you choose to save the results, the script will automate the
- process throughout the sections.
 
 **Stay safe and help the vulnerables**
