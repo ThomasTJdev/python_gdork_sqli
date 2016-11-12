@@ -5,6 +5,9 @@
 # Check url with qoute ' and catch error messages
 # Run sqlmap against urls
 #
+# License:
+# MIT - (c) 2016 ThomasTJ (TTJ)
+#
 
 
 import sys                          # Quit the shiat
@@ -13,8 +16,6 @@ import re                           # Searching web results for vuln
 import requests                     # Calling websites
 import urllib.parse                 # Parsing url encoding for search
 import shutil                       # Checking if SQLmap is installed
-import subprocess                   # Used for running SQLmap
-import shlex                        # Used for splitting arguments
 import psutil                       # Checking possible VPN connection
 import http.client                  # Ping to check network connection
 import random                       # Shuffle between user agents
@@ -41,10 +42,7 @@ filenameVulnUrl = "0"
 
 
 def LoadUserAgents(uafile="user_agents.txt"):
-    """
-    uafile : string
-        path to text file of user agents, one per line
-    """
+    # uafile : string, path to text file of user agents, one per line
     uas = []
     with open(uafile, 'rb') as uaf:
         for ua in uaf.readlines():
@@ -52,10 +50,10 @@ def LoadUserAgents(uafile="user_agents.txt"):
                 uas.append(ua.strip()[1:-1-1])
     random.shuffle(uas)
     return uas
-    
-    
+
+
 def inputSearchUrls():
-    
+
     print("\n" + bcolors.HEADER)
     print("  #===================================#")
     print("  #                                   #")
@@ -66,35 +64,35 @@ def inputSearchUrls():
     print("\n" + bcolors.ENDC)
     print("  Basesearch could be: php?id=, php?cat=, e.g.\n")
 
-    #=================================
+    # =================================
     # Base input
-    #=================================
-    
+    # =================================
+
     # @type  basesearch: str
     # @param basesearch: Query string. Must NOT be url-encoded.
     basesearch = input("  Enter base search string: " + bcolors.OKBLUE)
-    
+
     # @type  searchprovider: str
     # @param searchprovider: Who should perform the search.
     searchprovider = input(bcolors.ENDC + "  Bing or Google (b/g): " + bcolors.OKBLUE)
     if searchprovider.lower() not in ('b', 'g'):
         print(bcolors.WARNING + "  - Wrong input - only 'b' and 'g' allowed. Using 'b'")
         searchprovider = 'b'
-        
+
     # @type  maxperpage: int/str (changed to string)
     # @param maxperpage: Max results returned per page
     maxperpage = input(bcolors.ENDC + "  Results per page: " + bcolors.OKBLUE)
     if not maxperpage.isdigit():
         print(bcolors.WARNING + "  - Wrong input - only numeric values allowed. Using 20")
         maxperpage = 20
-        
+
     # @type  maxpages: int
     # @param maxpages: Max pages to loop through
     maxpages = input(bcolors.ENDC + "  Number of pages: " + bcolors.OKBLUE)
     if not maxpages.isdigit():
         print(bcolors.WARNING + "  - Wrong input - only numeric values allowed. Using 10")
         maxpages = 10
-        
+
     # @type  startpage: int
     # @param startpage: First page to look in
     startpage = input(bcolors.ENDC + "  Start pages: " + bcolors.OKBLUE)
@@ -103,29 +101,29 @@ def inputSearchUrls():
         startpage = 0
     if int(startpage) > 0:
         startpage = (int(startpage) - 1)
-        
+
     # @type  timeout: int
     # @param timeout: Sleep between request
     timeout = input(bcolors.ENDC + "  Enter pause between requests: " + bcolors.OKBLUE)
     if not timeout.isdigit():
         print(bcolors.WARNING + "  - Wrong input - only numeric values allowed. Using 6")
         timeout = 6
-        
+
     # @type  savesearch: str
     # @param savesearch: Save the shiat to a file
-    savesearch = input (bcolors.ENDC + "  Save search (y/N): " +  bcolors.OKBLUE)
+    savesearch = input(bcolors.ENDC + "  Save search (y/N): " + bcolors.OKBLUE)
     if savesearch.lower() not in ('', 'y', 'n'):
         print(bcolors.WARNING + "  - Wrong input - only 'y' and 'n' allowed. Using 'n'")
         savesearch = 'n'
-        
+
     # @type  filename: str
     # @param filename: Filename for file containing the search results
     if savesearch.lower() == "y":
-        filename = input (bcolors.ENDC + "  Filename for search: " +  bcolors.OKBLUE)
+        filename = input(bcolors.ENDC + "  Filename for search: " + bcolors.OKBLUE)
         if not os.path.isfile(filename):
             os.mknod(filename)
         else:
-            appendtofile = input (bcolors.ENDC + "  File exists, append (Y/n): " +  bcolors.OKBLUE)
+            appendtofile = input(bcolors.ENDC + "  File exists, append (Y/n): " + bcolors.OKBLUE)
             if appendtofile == "n":
                 print(bcolors.WARNING + "  - User disallowed appending to resultfile")
                 print(bcolors.WARNING + "  - Please try again with another filename")
@@ -134,33 +132,32 @@ def inputSearchUrls():
     else:
         filename = ""
         filename = "tmpurllist"
-    
-    
-    #=================================
+
+    # =================================
     # Make variables ready to use
-    #=================================
+    # =================================
     count = str(maxperpage)
     startpage = int(startpage)
     pages = (int(maxpages) + startpage)
     sleeptime = int(timeout)
     string = str(basesearch)
     stringurl = urllib.parse.quote_plus(string)
-    
+
     print(bcolors.ENDC + "\n  [*]:: Searching")
-    print(bcolors.HEADER + bcolors.BOLD + "\n" +
-        "  [+]  Results" + bcolors.ENDC)
-    
+    print(bcolors.HEADER + bcolors.BOLD + "\n" + "  [+]  Results" + bcolors.ENDC)
+
     searchUrlForString(searchprovider, count, startpage, pages, sleeptime, string, stringurl, savesearch, filename)
- 
-def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, string, stringurl, savesearch, filename):    
-    #=================================
+
+
+def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, string, stringurl, savesearch, filename):
+    # =================================
     # Loop through pages
-    #=================================
-    for start in range(startpage,pages):
-        #try:
-        #=========================
+    # =================================
+    for start in range(startpage, pages):
+        # try:
+        # =========================
         # Bing search
-        #=========================
+        # =========================
         if searchprovider == "b":
             pagenr = int(start)*int(count)+1
             address = "http://www.bing.com/search?q=instreamset:(url title):" + stringurl + "&count=" + count + "&first=" + str(pagenr)
@@ -168,16 +165,18 @@ def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, strin
             # Loading random useragent
             uas = LoadUserAgents()
             ua = random.choice(uas)  # select a random user agent
-            headers = {"Connection" : "close", "User-Agent" : ua}
+            headers = {"Connection": "close", "User-Agent": ua}
             r = requests.get(address, headers=headers)
             soup = BeautifulSoup(r.text, 'lxml')
             for d in soup.find_all('h2'):
                 for a in d.find_all('a', href=True):
                     if string in a['href']:
-                        print(bcolors.OKGREEN
-                        + "  ["
-                        + time.strftime("%H:%M:%S")
-                        + "]  [+]  " + a['href'] + bcolors.ENDC)
+                        print(
+                            bcolors.OKGREEN
+                            + "  ["
+                            + time.strftime("%H:%M:%S")
+                            + "]  [+]  " + a['href'] + bcolors.ENDC
+                            )
                         if filename:
                             with open(filename, 'a') as file:
                                 file.write(a['href'] + "\n")
@@ -185,42 +184,44 @@ def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, strin
                         pass
                     else:
                         pass
-            sleep(sleeptime)   
+            sleep(sleeptime)
 
-        #=========================
+        # =========================
         # Google search
-        #=========================
+        # =========================
         elif searchprovider == "g":
             pagenr = int(start)*int(count)
             address = "https://www.google.dk/search?q=" + stringurl + "&num=" + count + "&start=" + str(pagenr)
-            #address = "https://www.google.dk/search?q=inurl%3A" + stringurl + "&num=" + count + "&start=" + str(pagenr)
+            # address = "https://www.google.dk/search?q=inurl%3A" + stringurl + "&num=" + count + "&start=" + str(pagenr)
             print("  [*]  Page number: " + str(int(start)+1))
             # Loading random useragent
             uas = LoadUserAgents()
             ua = random.choice(uas)  # select a random user agent
-            headers = {"Connection" : "close", "User-Agent" : ua}
+            headers = {"Connection": "close", "User-Agent": ua}
             r = requests.get(address, headers=headers)
             soup = BeautifulSoup(r.text, 'lxml')
             for d in soup.find_all('cite'):
                 url = d.text
                 if string in url:
-                    print(bcolors.OKGREEN 
-                    + "  ["
-                    + time.strftime("%H:%M:%S")
-                    + "]  [+]  " + url + bcolors.ENDC)
+                    print(
+                        bcolors.OKGREEN
+                        + "  ["
+                        + time.strftime("%H:%M:%S")
+                        + "]  [+]  " + url + bcolors.ENDC
+                        )
                     if filename == "y":
                         with open(filename, 'a') as file:
                             file.write(url + "\n")
             sleep(sleeptime)
         try:
             print("")
-    
-        #=============================
+
+        # =============================
         # Error, end, exit
-        #=============================
+        # =============================
         except KeyboardInterrupt:
             print(bcolors.FAIL + "  User input - Ctrl + c" + bcolors.ENDC)
-            quitnow = input (bcolors.ENDC + bcolors.BOLD + "    Exit program (y/N): " +  bcolors.OKBLUE)
+            quitnow = input(bcolors.ENDC + bcolors.BOLD + "    Exit program (y/N): " + bcolors.OKBLUE)
             if quitnow == "y":
                 print(bcolors.ENDC + "  // Exiting\n\n")
                 sys.exit()
@@ -228,11 +229,10 @@ def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, strin
                 print(bcolors.ENDC + "  // Continuing\n\n")
         except:
             print(bcolors.FAIL + "  ERROR!!! " + bcolors.ENDC)
-    
-    
-    #=================================
+
+    # =================================
     # Done - sum it up
-    #=================================
+    # =================================
     print("\n  Done scraping")
     with open(filename) as f:
         resultsnumber = sum(1 for _ in f)
@@ -242,7 +242,7 @@ def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, strin
     else:
         print("  Total urls collected:  " + str(resultsnumber))
     # Check urls? Next function activates..
-    checkurls = input (bcolors.ENDC + "\n    Would you like to check urls for vuln (Y/n): " +  bcolors.OKBLUE)
+    checkurls = input(bcolors.ENDC + "\n    Would you like to check urls for vuln (Y/n): " + bcolors.OKBLUE)
     if checkurls.lower() not in ('', 'y', 'n'):
         print(bcolors.WARNING + "  - Wrong input - only 'y' and 'n' allowed. Using 'y'")
         checkurls = "y"
@@ -253,7 +253,7 @@ def searchUrlForString(searchprovider, count, startpage, pages, sleeptime, strin
         except OSError:
             pass
         sys.exit()
-    else:    
+    else:
         checkUrlsForVuln(filename)
 
 
@@ -266,15 +266,15 @@ def checkUrlsForVuln(filenameRawUrl):
     print("  #                               #")
     print("  #===============================#")
     print("\n" + bcolors.ENDC)
-    
-    #=================================
+
+    # =================================
     # Base input
-    #=================================
-    
+    # =================================
+
     # Base input
     if filenameRawUrl != "0":
         print("  Filepath from run is still in memory: " + filenameRawUrl)
-        urlfileChoose = input (bcolors.ENDC + "  (i)nput new filename, or (u)se from memory (i/U): " +  bcolors.OKBLUE)
+        urlfileChoose = input(bcolors.ENDC + "  (i)nput new filename, or (u)se from memory (i/U): " + bcolors.OKBLUE)
         if urlfileChoose not in ('i', 'u'):
             print(bcolors.WARNING + "  - Using from memory")
             urlfileChoose = 'u'
@@ -283,42 +283,42 @@ def checkUrlsForVuln(filenameRawUrl):
         else:
             # @type  urlfile: str
             # @param urlfile: File with the raw urls to check.
-            urlfile = input (bcolors.ENDC + "  Filename with urls: " +  bcolors.OKBLUE)
+            urlfile = input(bcolors.ENDC + "  Filename with urls: " + bcolors.OKBLUE)
     else:
         # @type  urlfile: str
         # @param urlfile: File with the raw urls to check.
-        urlfile = input (bcolors.ENDC + "  Filename with urls: " +  bcolors.OKBLUE)
-    
+        urlfile = input(bcolors.ENDC + "  Filename with urls: " + bcolors.OKBLUE)
+
     if not os.path.isfile(urlfile):
         print(bcolors.FAIL + "  Specified file does not exist.")
         print(bcolors.FAIL + "  Exiting")
         sys.exit()
-    
+
     # @type  verboseactive: str
     # @param verboseactive: Verboselevel.
-    verboseactive = input (bcolors.ENDC + "  Verboselevel (0, 1, 2): " +  bcolors.OKBLUE)
+    verboseactive = input(bcolors.ENDC + "  Verboselevel (0, 1, 2): " + bcolors.OKBLUE)
     if not verboseactive:
         print(bcolors.WARNING + "  - Wrong input - only numeric values allowed. Using 0")
         verboseactive = "0"
-    
+
     # @type  savesearch: str
     # @param savesearch: Save the scan to file.
-    savesearch = input (bcolors.ENDC + "  Save search (y/N): " +  bcolors.OKBLUE)
+    savesearch = input(bcolors.ENDC + "  Save search (y/N): " + bcolors.OKBLUE)
     if savesearch.lower() not in ('', 'y', 'n'):
         print(bcolors.WARNING + "  - Wrong input - only 'y' and 'n' allowed. Using 'y'")
         savesearch = 'y'
-    
+
     # @type  filename: str
     # @param filename: Filename for the shiat.
     if savesearch == "y":
-        filename = input (bcolors.ENDC + "  Filename for results: " +  bcolors.OKBLUE)
+        filename = input(bcolors.ENDC + "  Filename for results: " + bcolors.OKBLUE)
         if not filename:
             print(bcolors.WARNING + "  - Wrong input - using 'vulnurls' as filename")
             filename = "vulnurls"
         if not os.path.isfile(filename):
             os.mknod(filename)
         else:
-            appendtofile = input (bcolors.ENDC + "  File exists, append (Y/n): " +  bcolors.OKBLUE)
+            appendtofile = input(bcolors.ENDC + "  File exists, append (Y/n): " + bcolors.OKBLUE)
             if appendtofile == "n":
                 print("  User disallowed appending to resultfile")
                 print("  Please try again with another filename")
@@ -326,16 +326,15 @@ def checkUrlsForVuln(filenameRawUrl):
                 sys.exit()
     else:
         filename = "0"
-    
+
     print(bcolors.ENDC + "\n  [*]::Reading file\n")
     print("  [*]  Connecting\n")
-    
-    #=================================
+
+    # =================================
     # Loop through urls and add a qoute
-    #=================================
-    
+    # =================================
+
     with open(urlfile) as fileorg:
-        
         for line in fileorg:
             checkMY1 = 0
             checkMY2 = 0
@@ -352,17 +351,19 @@ def checkUrlsForVuln(filenameRawUrl):
             try:
                 # Get data
                 url = line + "'"
-                print("  ["
-                + time.strftime("%H:%M:%S")
-                + "]  [*]  " + line.strip('\n'))
+                print(
+                    "  ["
+                    + time.strftime("%H:%M:%S")
+                    + "]  [*]  " + line.strip('\n')
+                    )
                 # Loading random useragent
                 uas = LoadUserAgents()
                 ua = random.choice(uas)  # select a random user agent
-                headers = {"Connection" : "close", "User-Agent" : ua}
+                headers = {"Connection": "close", "User-Agent": ua}
                 r = requests.get(url, headers=headers)
                 soup = BeautifulSoup(r.text, 'lxml')
 
-                # Check if vuln - might updated indicationstrings according to 
+                # Check if vuln - might updated indicationstrings according to
                 # MySQL
                 checkMY1 = len(soup.find_all(text=re.compile('check the manual that corresponds to your MySQL')))
                 checkMY2 = len(soup.find_all(text=re.compile('SQL syntax')))
@@ -378,8 +379,8 @@ def checkUrlsForVuln(filenameRawUrl):
                 checkOR3 = len(soup.find_all(text=re.compile('quoted string not properly terminated')))
                 # Postgre SQL
                 checkPO1 = len(soup.find_all(text=re.compile('Query failed:')))
-                checkPO2= len(soup.find_all(text=re.compile('unterminated quoted string at or near')))
-                
+                checkPO2 = len(soup.find_all(text=re.compile('unterminated quoted string at or near')))
+
                 # Verbose level 1
                 if verboseactive == "1":
                     print("  [V]  Check1 MySQL found:    " + str(checkMY1))
@@ -394,7 +395,7 @@ def checkUrlsForVuln(filenameRawUrl):
                     print("  [V]  Check10 Oracle found:  " + str(checkOR3))
                     print("  [V]  Check11 Postgre found: " + str(checkPO1))
                     print("  [V]  Check12 Postgre found: " + str(checkPO2))
-                    
+
                 # Verbose level 2
                 if verboseactive == "2":
                     checkverMY1 = soup.find(text=re.compile('check the manual that corresponds to your MySQL'))
@@ -405,14 +406,14 @@ def checkUrlsForVuln(filenameRawUrl):
                     print("  [V]  Check2 MySQL found:    " + str(checkverMY2).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
                     print("  [V]  Check3 MySQL found:    " + str(checkverMY3).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
                     print("  [V]  Check4 MySQL found:    " + str(checkverMY4).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
-                    
+
                     checkverMS1 = soup.find(text=re.compile('Unclosed quotation mark before the character string'))
                     checkverMS2 = soup.find(text=re.compile('An unhanded exception occurred during the execution'))
                     checkverMS3 = soup.find(text=re.compile('Please review the stack trace for more information'))
                     print("  [V]  Check5 MS SQL found:   " + str(checkverMS1).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
                     print("  [V]  Check6 MS SQL found:   " + str(checkverMS2).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
                     print("  [V]  Check7 MS SQL found:   " + str(checkverMS3).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
-                    
+
                     checkverOR1 = soup.find(text=re.compile('java.sql.SQLException: ORA-00933'))
                     checkverOR2 = soup.find(text=re.compile('SQLExceptionjava.sql.SQLException'))
                     checkverOR3 = soup.find(text=re.compile('quoted string not properly terminated'))
@@ -424,31 +425,35 @@ def checkUrlsForVuln(filenameRawUrl):
                     checkverPO2 = soup.find(text=re.compile('unterminated quoted string at or near'))
                     print("  [V]  Check11 Postgre found: " + str(checkverPO1).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
                     print("  [V]  Check12 Postgre found: " + str(checkverPO2).replace('\n', ' ').replace('\r', '').replace('\t', '').replace('  ', ''))
-                
+
                 # If X is vuln
                 if (checkMY1 > 0 or checkMY2 > 0 or checkMY3 > 0 or checkMY4 > 0 or checkMS1 > 0 or checkMS2 > 0 or checkMS3 > 0 or checkOR1 > 0 or checkOR2 > 0 or checkOR3 > 0 or checkPO1 > 0 or checkPO2):
-                    print(bcolors.OKGREEN 
+                    print(
+                        bcolors.OKGREEN
                         + "\n"
                         + "                   Possible vuln url!"
                         + "\n"
                         + "  ["
                         + time.strftime("%H:%M:%S")
-                        + "]  [+]  " 
+                        + "]  [+]  "
                         + line + bcolors.ENDC
-                        + "\n")
+                        + "\n"
+                        )
                     if savesearch == "y":
                         with open(filename, 'a') as file:
                             file.write(line)
                 else:
-                    print(bcolors.WARNING 
-                    +"  ["
-                    + time.strftime("%H:%M:%S")
-                    + "]  [-]  " + line + bcolors.ENDC)
-            
+                    print(
+                        bcolors.WARNING
+                        + "  ["
+                        + time.strftime("%H:%M:%S")
+                        + "]  [-]  " + line + bcolors.ENDC
+                        )
+
             # Skip X or/and exit
             except KeyboardInterrupt:
                 print(bcolors.FAIL + "  [X]  " + line + bcolors.ENDC)
-                quitnow = input (bcolors.ENDC + bcolors.BOLD + "  Exit program (y/N): " +  bcolors.OKBLUE)
+                quitnow = input(bcolors.ENDC + bcolors.BOLD + "  Exit program (y/N): " + bcolors.OKBLUE)
                 if quitnow == "y":
                     print(bcolors.ENDC + "  // Exiting\n\n")
                     try:
@@ -458,15 +463,14 @@ def checkUrlsForVuln(filenameRawUrl):
                     sys.exit()
                 else:
                     print(bcolors.ENDC + "  // Continuing\n\n")
-                    
+
             # Bad X
             except:
                 print(bcolors.FAIL + "  [X]  " + line + bcolors.ENDC)
-               
-               
-    #=================================
+
+    # =================================
     # Done - sum it up
-    #=================================
+    # =================================
     print("\n  Done scanning urls")
     if savesearch == "y":
         with open(filename) as f:
@@ -480,14 +484,14 @@ def checkUrlsForVuln(filenameRawUrl):
             except OSError:
                 pass
             sys.exit()
-    checkurls = input (bcolors.ENDC + "\n  Would you like to run the urls through sqlmap (y/N): " +  bcolors.OKBLUE)
+    checkurls = input(bcolors.ENDC + "\n  Would you like to run the urls through sqlmap (y/N): " + bcolors.OKBLUE)
     if checkurls == "y":
         try:
             os.remove("tmpurllist")
         except OSError:
             pass
         scanUrlsSQLmap(filename)
-    else:    
+    else:
         print(bcolors.ENDC + "  // Exiting\n\n")
         try:
             os.remove("tmpurllist")
@@ -497,7 +501,6 @@ def checkUrlsForVuln(filenameRawUrl):
 
 
 def scanUrlsSQLmap(filenameVulnUrl):
-    
     print("\n\n\n" + bcolors.HEADER)
     print("  #===============================#")
     print("  #                               #")
@@ -506,11 +509,11 @@ def scanUrlsSQLmap(filenameVulnUrl):
     print("  #                               #")
     print("  #===============================#")
     print("\n" + bcolors.ENDC)
-    
-    #=================================
+
+    # =================================
     # Check if sqlmap installed, file, etc.
-    #=================================
-    
+    # =================================
+
     if shutil.which('sqlmap') is None:
         print("  SQLmap is not installed on system - can't go on.")
         print("  Install sqlmap and run command below (sudo pacman -S sqlmap, sudo apt-get install sqlmap, etc.)")
@@ -521,33 +524,33 @@ def scanUrlsSQLmap(filenameVulnUrl):
             print("  No filename in memory, please specify.")
             # @type  urlfile: str
             # @param urlfile: File with the raw urls to check.
-            filenameVulnUrl = input (bcolors.ENDC + "  Filename with urls: " +  bcolors.OKBLUE)
+            filenameVulnUrl = input(bcolors.ENDC + "  Filename with urls: " + bcolors.OKBLUE)
             if not os.path.isfile(filenameVulnUrl):
                 print(bcolors.FAIL + "  Specified file does not exist.")
                 print(bcolors.FAIL + "  Exiting")
                 sys.exit()
-    
+
     print(bcolors.ENDC + "  SQLmap will be started with arguments dbs, batch, random-agent, 4xthreads.")
 
     fileDestination = (os.getcwd() + "/" + filenameVulnUrl)
     command = ('sqlmap -m ' + fileDestination + " --dbs --batch --random-agent --threads 4")
     print("Command to execute: " + command)
-    
-    input (bcolors.ENDC + "  Press enter to continue\n")
+
+    input(bcolors.ENDC + "  Press enter to continue\n")
     print(bcolors.ENDC + "  Starting SQLmap - follow onscreen instructions")
     print(bcolors.BOLD + "  Press Ctrl + c to exit\n\n\n")
-    
+
     # RUN SQLMAP !!
     os.system(command)
-    
-    # Not implemented - specify saving destination    
+
+    # Not implemented - specify saving destination
     # @type  savingplace: str
     # @param savingplace: Who should perform the search.
-    #savingplace = input(bcolors.ENDC + "  Specify folder where results will be placed: " + bcolors.OKBLUE)
-    #if savingplace not in ('b', 'g'):
+    # savingplace = input(bcolors.ENDC + "  Specify folder where results will be placed: " + bcolors.OKBLUE)
+    # if savingplace not in ('b', 'g'):
     #    print(bcolors.WARNING + "  - Wrong input - only 'b' and 'g' allowed. Using 'b'")
-    #    savingplace = 'b'    
-            
+    #    savingplace = 'b'
+
 
 def helpme():
     print("\n\n" + bcolors.HEADER)
@@ -591,7 +594,7 @@ def helpme():
     print(bcolors.BOLD + "      Stay safe and help the vulnerables" + bcolors.ENDC)
     print("\n")
     sys.exit()
-    
+
 
 def checkConnection():
     # Header request for net connectivity
@@ -602,7 +605,7 @@ def checkConnection():
         print(bcolors.OKGREEN + "  [+]  Network connection seems OK" + bcolors.ENDC)
     except:
         print(bcolors.FAIL + "  [-]  Network connection seems down" + bcolors.ENDC)
-    
+
     # Checking for tun0 or ppp
     print(bcolors.ENDC + "  [*]  Checking VPN connection" + bcolors.ENDC)
     if re.match(r'tun.', 'tun') or re.match(r'ppp.', 'ppp') not in psutil.net_if_addrs():
@@ -614,7 +617,7 @@ def checkConnection():
             sys.exit()
     else:
         print(bcolors.OKGREEN + "  [+]  Indications of a VPN. Good. Will continue." + bcolors.ENDC)
-        
+
     startpage()
 
 
@@ -637,7 +640,7 @@ def startpage():
         print(bcolors.WARNING + "  - Wrong input - only 1, 2, 3 and 4 allowed")
         print("  - Exiting\n")
         sys.exit()
-        
+
     if choice == "1":
         inputSearchUrls()
     elif choice == "2":
@@ -647,9 +650,9 @@ def startpage():
     elif choice == "4":
         helpme()
 
-    
+
 def main():
-    os.system('clear') 
+    os.system('clear')
     print("\n\n")
     print("      _____           __   _____ ____    __       _         _           __  _           ")
     print("     / __(_)___  ____/ /  / ___// __ \  / /      (_)___    (_)__  _____/ /_(_)___  ____ ")
